@@ -6,7 +6,7 @@ class StandardZoomable extends StatefulWidget {
   final ValueChanged<double> onZoomEnd;
   final ValueChanged<double> onZoomUpdate;
   final double maxScale;
-  final double doubleTapScale;
+  final double doubleTapScale, scale;
   final Duration animationDuration;
 
   const StandardZoomable({
@@ -14,9 +14,10 @@ class StandardZoomable extends StatefulWidget {
     this.onZoomStart,
     this.onZoomEnd,
     this.onZoomUpdate,
-    this.maxScale,
-    this.doubleTapScale,
-    this.animationDuration,
+    this.maxScale = 5.0,
+    this.scale = 1.0,
+    this.doubleTapScale = 2,
+    this.animationDuration = const Duration(milliseconds: 200),
   });
 
   @override
@@ -30,12 +31,19 @@ class _StandardZoomableState extends State<StandardZoomable>
   AnimationController _scaleAnimController;
   AnimationController _offsetAnimController;
   ScaleUpdateDetails _latestScaleUpdateDetails;
-  double _scale = 1.0;
+  double _scale;
+
   Offset _offset = Offset.zero;
   Offset _doubleTapPosition;
   bool _isScaling = false;
   bool _isDragging = false;
   double _maxDragOver = 100;
+
+  @override
+  void initState() {
+    _scale = widget.scale ?? 1.0;
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,10 +145,10 @@ class _StandardZoomableState extends State<StandardZoomable>
     }
 
     double offsetXIncrement = (details.localFocalPoint.dx -
-        _latestScaleUpdateDetails.localFocalPoint.dx) *
+            _latestScaleUpdateDetails.localFocalPoint.dx) *
         _scale;
     double offsetYIncrement = (details.localFocalPoint.dy -
-        _latestScaleUpdateDetails.localFocalPoint.dy) *
+            _latestScaleUpdateDetails.localFocalPoint.dy) *
         _scale;
     double scaleOffsetX = context.size.width * (_scale - 1.0) / 2;
     if (scaleOffsetX <= 0) {
@@ -153,10 +161,7 @@ class _StandardZoomableState extends State<StandardZoomable>
           (_maxDragOver - (-scaleOffsetX - _offset.dx)) / _maxDragOver;
     }
     double scaleOffsetY =
-        (context.size.height * _scale - MediaQuery
-            .of(context)
-            .size
-            .height) / 2;
+        (context.size.height * _scale - MediaQuery.of(context).size.height) / 2;
     if (scaleOffsetY <= 0) {
       offsetYIncrement = 0;
     } else if (_offset.dy > scaleOffsetY) {
@@ -182,8 +187,7 @@ class _StandardZoomableState extends State<StandardZoomable>
       _animationOffset(Offset.zero);
     } else if (_isDragging) {
       double realScale = _scale > widget.maxScale ? widget.maxScale : _scale;
-      double targetOffsetX = _offset.dx,
-          targetOffsetY = _offset.dy;
+      double targetOffsetX = _offset.dx, targetOffsetY = _offset.dy;
       double scaleOffsetX = context.size.width * (realScale - 1.0) / 2;
       if (scaleOffsetX <= 0) {
         targetOffsetX = 0;
@@ -193,10 +197,7 @@ class _StandardZoomableState extends State<StandardZoomable>
         targetOffsetX = -scaleOffsetX;
       }
       double scaleOffsetY = (context.size.height * realScale -
-          MediaQuery
-              .of(context)
-              .size
-              .height) /
+              MediaQuery.of(context).size.height) /
           2;
       if (scaleOffsetY < 0) {
         targetOffsetY = 0;
